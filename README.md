@@ -112,14 +112,10 @@ Torque and rotation angle are represented in simulation using analog potentiomet
 ```
 BoltGuard/
 ├── README.md
-├── docs/
-│   ├── project-idea.md          # detailed concept write-up
-│   └── simulation-guide.md      # detailed build/wiring guide
-├── firmware/
-│   ├── Sense_Controller.ino     # Arduino sketch (Stage 1 + Stage 2 logic)
-│   └── station_controller/      # LDmicro ladder logic project (pending)
-└── presentation/
-    └── BoltGuard.pptx
+├── project-idea.md          # detailed concept write-up
+├── Sense_Controller.ino     # Arduino sketch (Stage 1 + Stage 2 logic)
+└── BoltGuard.pdf
+    
 ```
 
 ## Current Status

@@ -155,13 +155,13 @@ The full schematic connects the Station Controller and Sense Controller through 
 BoltGuard/
 ├── README.md
 ├── docs/
+│   ├── BoltGuard.pdf
 │   ├── project-idea.md
 │   └── simulation-guide.md
 ├── firmware/
 │   ├── Sense_Controller.ino
-│   └── station_controller/        # LDmicro ladder logic project
-└── simulation/
-    └── Boltguard_simulation.pdsprj
+│   └── BoltGuard_Station_Controller.ld
+├── Boltguard_simulation.pdsprj
 ```
 
 ## Running the Simulation

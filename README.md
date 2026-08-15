@@ -124,6 +124,7 @@ Every design choice follows one rule: **a bolt's job isn't done the moment it's 
 
 The full schematic connects the Station Controller and Sense Controller through a dedicated set of digital lines carrying "which bolt is active" and "pass/fail" signals in both directions, a shared ground, sensor inputs on the Sense Controller's analog pins, an LCD driven in 4-bit mode, and a transistor-driven relay stage that energizes only once all three bolts have passed. Full pin-by-pin wiring detail is maintained in `/docs/simulation-guide.md`.
 
+<img width="2468" height="1275" alt="Wiring Circuit" src="https://github.com/user-attachments/assets/41521fc3-2d7f-42cf-860b-878419171d60" />
 
 
 ## Logic Flow

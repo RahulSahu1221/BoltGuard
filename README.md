@@ -1,146 +1,182 @@
-<div align='center'>
+<div align="center">
 
 # BoltGuard
+### *Verified at Install. Watched for Life.*
 
-**A Two-Stage Fastening Verification & Bolt-Loosening Early-Warning System**
+A **simulation-based industrial fastening prototype** that verifies bolt torque and angle at the moment of installation, then continues watching each bolt afterward for early signs of vibration-induced loosening — extending fastening quality control from a one-time install-time check into an ongoing joint-health system.
 
-BoltGuard is a simulated embedded system that verifies bolted joints at the moment of installation *and* continues watching them afterward for signs of vibration-induced loosening — closing a gap that most factory-floor fastening QC systems leave open.
+Built and validated in **Proteus 8 Professional**, using an **ATmega16** running PLC ladder logic (via LDmicro) alongside an **Arduino Uno** as the sensing and decision controller.
 
-<br>
+---
 
-<img src='https://img.shields.io/badge/Status-System%20Concept%20Finalized-4caf50?style=for-the-badge' /> <img src='https://img.shields.io/badge/Architecture-Two--Stage%20Design%20Complete-7b1fa2?style=for-the-badge' /> <img src='https://img.shields.io/badge/Firmware-Sense%20Controller%20Ready-1976d2?style=for-the-badge' /> 
-<img src='https://img.shields.io/badge/Ladder%20Logic-LDmicro%20Pending-455a64?style=for-the-badge' /> <img src='https://img.shields.io/badge/Central%20Monitor-Implementation%20Pending-546e7a?style=for-the-badge' /> <img src='https://img.shields.io/badge/Simulation-Proteus%20Pending-f57c00?style=for-the-badge' /> <img src='https://img.shields.io/badge/Communication-UART%20Alert%20Link-00897b?style=for-the-badge' />
-<img src='https://img.shields.io/badge/Controller-ATmega16%20%2B%20Arduino%20Uno-1565c0?style=for-the-badge' /> <img src='https://img.shields.io/badge/Verification-Torque%20%2B%20Angle%20Monitoring-ef6c00?style=for-the-badge' /> <img src='https://img.shields.io/badge/Domain-Industrial%20Automation-546e7a?style=for-the-badge' /> 
+![Arduino](https://img.shields.io/badge/ARDUINO-00979D?style=for-the-badge&logo=arduino&logoColor=white)
+![Proteus](https://img.shields.io/badge/PROTEUS%208%20PROFESSIONAL-E4A11B?style=for-the-badge)
+![PLC Ladder Logic](https://img.shields.io/badge/PLC%20LADDER%20LOGIC-D32F2F?style=for-the-badge)
+![Simulation](https://img.shields.io/badge/SIMULATION%20BASED-4CAF50?style=for-the-badge)
+![Poka Yoke](https://img.shields.io/badge/POKA--YOKE%20INTERLOCK-2196F3?style=for-the-badge)
+![Predictive Maintenance](https://img.shields.io/badge/PREDICTIVE%20MAINTENANCE-5A0FC8?style=for-the-badge)
+![Status](https://img.shields.io/badge/STATUS-SIMULATION%20IN%20PROGRESS-BA7517?style=for-the-badge)
+![License](https://img.shields.io/badge/LICENSE-MIT-8BC34A?style=for-the-badge)
 
+---
+**If you find this project useful, consider giving it a star!**
 </div>
 
 ---
 
 ## Table of Contents
 - [Overview](#overview)
+- [Project Status](#project-status)
 - [The Problem](#the-problem)
-- [The Approach — Two Stages](#the-approach--two-stages)
+- [The Solution](#the-solution)
+- [Key Features](#key-features)
+- [Engineering Principle](#engineering-principle)
 - [System Architecture](#system-architecture)
-- [How It Works](#how-it-works)
-- [Tech Stack](#tech-stack)
+- [Components Used](#components-used)
+- [Circuit & Wiring](#circuit--wiring)
+- [Logic Flow](#logic-flow)
+- [Simulation Test Results](#simulation-test-results)
+- [Technologies Used](#technologies-used)
 - [Repository Structure](#repository-structure)
-- [Current Status](#current-status)
-- [Roadmap](#roadmap)
-- [Limitations](#limitations)
+- [Running the Simulation](#running-the-simulation)
+- [Honest Limitations & Future Scope](#honest-limitations--future-scope)
+- [License](#license)
 
 ---
 
 ## Overview
 
-Most automated fastening lines check a bolt exactly once: at the moment it's tightened. If torque and angle look correct, the bolt is marked "pass" and never checked again. BoltGuard extends that single checkpoint into an ongoing verification pipeline — it confirms correct installation **and** keeps monitoring the same joint afterward, so early signs of loosening can be caught before the joint actually fails.
+Most automated fastening lines check a bolt exactly once: at the moment it's tightened. If torque and angle look correct, the bolt is marked "pass" and never inspected again. BoltGuard treats that as only half the job. It verifies torque and angle at install, using a Poka-Yoke (mistake-proofing) sequence that won't let a station advance past a failed bolt — and for every bolt that passes, it keeps sampling that bolt's angle afterward, so a meaningful backward drift (the earliest mechanical signature of loosening) raises an alert before the joint actually fails.
 
-The system is built around two cooperating microcontroller units and is currently developed and tested as a Proteus circuit simulation, with no physical hardware required to demonstrate the concept.
+## Project Status
+
+This project is at the **active simulation and debugging stage**. The PLC ladder logic (Station Controller) is written and compiling cleanly in LDmicro, the sensing/decision firmware (Sense Controller) is written and running on the Arduino, and the full Proteus circuit — sensors, LCD, indicators, relay driver stage, and serial alert link to a Central Monitor — is wired end to end. Stage 2 (the loosening-drift alert) has already been confirmed working in simulation, correctly reporting a drifted bolt over serial. Stage 1's full three-bolt sequence is currently blocked by an intermittent watchdog-reset issue being actively isolated and fixed (see [Honest Limitations & Future Scope](#honest-limitations--future-scope)). No physical hardware has been built — this is a simulation-first prototype, by design, so the logic and safety behavior are fully validated before any physical components are committed to.
 
 ## The Problem
 
-A bolted joint fails in one of two fundamentally different ways:
+A bolted joint fails in one of two very different ways: an installation error (under-torque, over-torque, cross-threading, a skipped fastener) caught by standard QC, or in-service self-loosening — a correctly installed bolt slowly backing off over time due to continuous vibration, a well-documented mechanical phenomenon that standard install-time inspection is structurally blind to, because it only happens after the part has already left the line with a "pass" on record.
 
-1. **Installation error** — under-torque, over-torque, cross-threading, or a skipped fastener. This happens during assembly and is what conventional torque/angle QC already targets.
-2. **In-service self-loosening** — a correctly installed bolt can still back off gradually over time due to continuous vibration (a well-documented mechanical phenomenon in engineering literature, often referred to as vibration-induced self-loosening). This failure mode is invisible to standard install-time inspection because it only develops *after* the part has already passed QC and left the line.
+## The Solution
 
-BoltGuard treats these as two separate problems that need two separate checks, rather than assuming a single pass/fail moment is enough.
+BoltGuard splits a bolt's life into two watched phases:
 
-## The Approach — Two Stages
+- **Stage 1 — Install Verification:** Torque and final angle are checked against a pass window for each bolt in sequence. A failed bolt locks the entire station — no advancing to the next bolt, no silent skipping — until a deliberate manual reset.
+- **Stage 2 — In-Service Watch:** Every bolt that passes has its angle stored as a baseline. The system keeps re-sampling that angle; a significant backward rotation triggers an early-warning alert, reported to a Central Monitor, before the joint is actually loose.
 
-**Stage 1 — Install Verification**
-While a bolt is being fastened, the system reads torque and rotation angle and checks both against an acceptable pass window before allowing the next bolt in sequence to begin. If a bolt fails, the whole station locks and requires a manual reset — a mistake-proofing (Poka-Yoke) behavior that prevents a bad fastener from silently moving down the line.
+## Key Features
 
-**Stage 2 — In-Service Watch**
-Once a bolt passes, its final angle is stored as a baseline. The system then periodically re-samples that bolt's angular position. A meaningful backward rotation — the earliest mechanical signature of loosening — triggers an early-warning alert, long before the joint would visibly fail or a technician would notice by inspection.
+- Sequential multi-bolt Poka-Yoke interlock with forced-restart-on-fault behavior
+- Dedicated PLC ladder logic layer (SET/RESET latching) separate from the sensing/decision layer
+- Post-install angular drift monitoring — a genuinely underused idea in standard fastening QC
+- Live LCD status display, pass/fail indicators, and audible fault alerts
+- Serial-based alert reporting to a separate Central Monitor
+- Fully simulated, reproducible, and testable without physical hardware
+
+## Engineering Principle
+
+Every design choice follows one rule: **a bolt's job isn't done the moment it's tight — it's done when it stays tight.** Verification and monitoring are treated as two separate responsibilities, handled by two separate controllers, so each can be reasoned about, tested, and debugged independently.
 
 ## System Architecture
 
 ```
-                    ┌─────────────────────────────┐
-                    │      STATION CONTROLLER     │
-                    │   (ATmega16 + ladder logic) │
-                    │                             │
-                    │  Enforces bolt sequence,    │
-                    │  locks on any FAIL,         │
-                    │  requires manual RESET      │
-                    └─────────────┬───────────────┘
+                    ┌───────────────────────────┐
+                    │      STATION CONTROLLER   │
+                    │   ATmega16 + LDmicro      │
+                    │   ladder logic            │
+                    │                           │
+                    │  Enforces bolt sequence,  │
+                    │  locks on any FAIL,       │
+                    │  requires manual RESET    │
+                    └─────────────┬─────────────┘
                                   │ digital I/O
                                   ▼
-                    ┌─────────────────────────────┐
-                    │       SENSE CONTROLLER      │
-                    │        (Arduino Uno)        │
-                    │                             │
-                    │  Stage 1: torque + angle    │
-                    │  pass/fail check per bolt   │
-                    │                             │
-                    │  Stage 2: angle drift watch │
-                    │  after installation         │
-                    └─────────────┬───────────────┘
+                    ┌──────────────────────────────┐
+                    │       SENSE CONTROLLER       │
+                    │        Arduino Uno           │
+                    │                              │
+                    │  Stage 1: torque + angle     │
+                    │  pass/fail check per bolt    │
+                    │                              │
+                    │  Stage 2: angle drift watch  │
+                    │  after installation          │
+                    └─────────────┬────────────────┘
                                   │ serial link
                                   ▼
-                    ┌─────────────────────────────┐
-                    │      CENTRAL MONITOR        │
-                    │  Displays live station      │
-                    │  status + loosening alerts  │
-                    └─────────────────────────────┘
+                    ┌──────────────────────────────┐
+                    │      CENTRAL MONITOR         │
+                    │  Displays live status +      │
+                    │  loosening alerts by bolt ID │
+                    └──────────────────────────────┘
 ```
 
-Torque and rotation angle are represented in simulation using analog potentiometers, standing in for real torque and angle transducers. The alert path between the Sense Controller and the Central Monitor is a serial (UART) link, standing in for what would be a wireless link in a physical deployment.
+## Components Used
 
-## How It Works
+- ATmega16 microcontroller (Station Controller)
+- Arduino Uno (Sense Controller)
+- 16×2 LCD (LM016L) with contrast potentiometer
+- Potentiometers simulating torque, angle, and vibration-drift sensors
+- Push buttons (Start, Manual Reset)
+- LEDs and buzzers for pass/fail/fault indication
+- BC547 NPN transistor + 1N4007 flyback diode + relay (Line Advance driver stage)
+- Virtual Terminal (Central Monitor)
 
-1. An operator (or automated trigger) starts the sequence; only the first bolt's station is active.
-2. The Sense Controller reads that bolt's torque and angle and reports pass or fail to the Station Controller.
-3. On pass, the Station Controller disables the current station and enables the next — a bolt cannot be skipped or done out of order.
-4. On fail, the Station Controller immediately locks all stations, keeps a fault indicator active, and will not resume until a manual reset is triggered — preventing an operator from pushing a bad fastener through.
-5. Once all bolts in the sequence pass, each one's final angle is stored as a baseline and the system enters watch mode.
-6. In watch mode, the Sense Controller periodically re-checks angle against the stored baseline for each installed bolt. A drift beyond a defined threshold raises an alert, sent to the Central Monitor with the affected bolt's identifier.
+## Circuit & Wiring
 
-## Tech Stack
+The full schematic connects the Station Controller and Sense Controller through a dedicated set of digital lines carrying "which bolt is active" and "pass/fail" signals in both directions, a shared ground, sensor inputs on the Sense Controller's analog pins, an LCD driven in 4-bit mode, and a transistor-driven relay stage that energizes only once all three bolts have passed. Full pin-by-pin wiring detail is maintained in `/docs/simulation-guide.md`.
 
-| Component | Role |
+
+
+## Logic Flow
+
+1. Operator presses Start → Bolt 1's station activates.
+2. Sense Controller checks torque + angle → reports pass or fail.
+3. On pass, Station Controller disables the current station and enables the next.
+4. On fail, Station Controller locks all stations and holds the fault until Reset is pressed.
+5. Once all three bolts pass, each bolt's angle is stored as a baseline and the system enters watch mode.
+6. Sense Controller periodically re-checks each installed bolt's angle; a drift past threshold sends an alert to the Central Monitor.
+
+## Simulation Test Results
+
+- **Stage 2 (drift alert):** confirmed working — a manually simulated drift on an installed bolt correctly produced a serial alert ("Bolt 1 drifted N units — check joint") on the Central Monitor.
+- **Stage 1 (multi-bolt sequence):** blocked by an intermittent watchdog-reset issue currently under active investigation; full pass-through of Bolt 2 and Bolt 3 has not yet been confirmed.
+- **LCD status display:** not yet confirmed operational — likely linked to the same reset issue above, to be re-verified once resolved.
+
+## Technologies Used
+
+| Tool | Role |
 |---|---|
-| **ATmega16 + LDmicro** | PLC-style ladder logic — bolt sequencing, fault interlock, latching reset behavior |
-| **Arduino Uno (C/C++)** | Sensor reading, pass/fail evaluation, drift monitoring, LCD/LED/buzzer status output |
-| **Proteus 8 Professional** | Full circuit simulation and validation environment |
-| **Potentiometers** | Simulated torque, angle, and vibration-drift sensors |
-| **16×2 LCD** | Local status display |
-| **UART Serial** | Alert reporting to the Central Monitor |
+| LDmicro | PLC ladder logic authoring and AVR compilation |
+| Arduino IDE | Sense Controller firmware |
+| Proteus 8 Professional | Full circuit simulation and validation |
 
 ## Repository Structure
 
 ```
 BoltGuard/
 ├── README.md
-├── project-idea.md          # detailed concept write-up
-├── Sense_Controller.ino     # Arduino sketch (Stage 1 + Stage 2 logic)
-└── BoltGuard.pdf
-    
+├── docs/
+│   ├── project-idea.md
+│   └── simulation-guide.md
+├── firmware/
+│   ├── Sense_Controller.ino
+│   └── station_controller/        # LDmicro ladder logic project
+└── simulation/
+    └── Boltguard_simulation.pdsprj
 ```
 
-## Current Status
+## Running the Simulation
 
-- [x] Problem definition and two-stage concept finalized
-- [x] System architecture designed
-- [x] Sense Controller firmware written (`Sense_Controller.ino`) — torque/angle pass-fail check and angle drift watch logic implemented
-- [ ] Station Controller ladder logic (PLC sequencing and fault interlock) — in progress
-- [ ] Central Monitor implementation
-- [ ] Full Proteus circuit build and simulation
-- [ ] End-to-end testing across pass, fault, and drift-alert scenarios
+1. Open `station_controller` in LDmicro and compile to `.hex`.
+2. Open `Sense_Controller.ino` in the Arduino IDE and export a compiled binary.
+3. Open `Boltguard_simulation.pdsprj` in Proteus 8 Professional, load both `.hex` files onto their respective components, and run.
 
-## Roadmap
+## Honest Limitations & Future Scope
 
-- Build and validate the Station Controller ladder logic in LDmicro
-- Wire and simulate the complete circuit in Proteus
-- Run and document the three core test scenarios: all-pass, fault-and-reset, and loosening-alert
-- Explore a physical hardware prototype using real torque/angle sensing hardware
-- Explore wireless alerting (e.g. RF or IoT module) as a replacement for the current wired serial link
+- Torque, angle, and vibration-drift are simulated using potentiometers, not real transducers.
+- The alert path to the Central Monitor is a wired serial link in simulation, standing in for a real wireless link in a physical build.
+- A watchdog-reset issue is currently blocking full validation of the three-bolt sequence and is being actively debugged.
+- No physical hardware has been built yet; that remains a planned future phase once the simulation is fully validated.
 
-## Limitations
+## License
 
-BoltGuard is currently a **concept simulation**, not a certified industrial monitoring device:
-- Torque and angle values are simulated using potentiometers, not real transducers
-- The alert path is a wired serial link in simulation, standing in for a real wireless link
-- Loosening drift in Stage 2 is manually simulated rather than caused by real vibration
-
-These are deliberate simplifications made to validate the system logic and architecture before investing in physical sensing hardware.
+MIT
